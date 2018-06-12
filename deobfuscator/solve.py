@@ -9,10 +9,11 @@ import os
 from arybo.tools.triton_ import tritonexprs2arybo, tritonast2arybo
 from arybo.lib.exprs_asm import to_llvm_function
 
+from recompiler import Recompiler
+
 DEBUG = True
 
-FUNC_CALL = 0x4006BD
-FUNC_RETN = FUNC_CALL + 5
+CALL_VFUNC = 0x4006BD
 
 BASE_PLT   = 0x7f0000000000
 BASE_ARGV  = 0x20000000
@@ -256,7 +257,7 @@ def emulate(ctx, pc):
         if instruction.getType() == OPCODE.HLT:
             break
 
-        if pc == 0x00000000004006C2:
+        if pc == CALL_VFUNC + 5:
             exprs = ctx.sliceExpressions(ctx.getSymbolicExpressionFromId(ctx.getSymbolicRegisterId(ctx.registers.rax)))
             PATHS.append(exprs)
             break
@@ -321,7 +322,10 @@ def main():
         M = generateLLVMExpressions(ctx)
 
         # Recompile the LLVM-IL
-        recompile(M)
+        recompiler = Recompiler(M, sys.argv[1].split('/')[-1], "deobfuscated")
+        recompiler.compile_ll()
+        recompiler.extract_bytecodes()
+        recompiler.inject_bytecodes(CALL_VFUNC)
 
     else:
         print("[-] There is Multiple conditions.")
