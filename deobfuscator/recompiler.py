@@ -13,6 +13,8 @@ class Recompiler(object):
 
     def compile_ll(self):
         result = True
+        
+        print("[+] Compile llvm-ir to object file...")
 
         with open(self.l_file, 'w') as f:
             m = str(self.llvm_exprs).replace("__arybo", self.funcname)
@@ -47,6 +49,9 @@ class Recompiler(object):
 
     def inject_bytecodes(self, call_vfunc):
         result = True
+
+        print("[+] Injecting deobfuscated code to binary... Done.")
+        print("[+] Hooking virtualized function... Done.")
 
         objcopy = subprocess.Popen(["objcopy",
                                     self.filename,

@@ -11,7 +11,7 @@ from arybo.lib.exprs_asm import to_llvm_function
 
 from recompiler import Recompiler
 
-DEBUG = True
+DEBUG = False
 
 CALL_VFUNC = 0x4006BD
 
@@ -29,37 +29,16 @@ PATHS = list()
 
 VM_INPUT = []
 
-
-def recompile(M):
-    filename = sys.argv[1].split('/')[-1]
-    funcname = "secret"
-    ll_name = "{}.ll".format(filename)
-
-    with open(ll_name, 'w') as f:
-        M = str(M).replace("__arybo", funcname)
-        M = str(M).replace("unknown-unknown-unknown", "x86_64-pc-linux-gnu")
-        f.write(M)
-        debug("[+] LLVM module wrote in {}".format(ll_name))
-
-    debug("[+] Compiling deobfuscated function...")
-    os.system("clang -c {} -O2 -o {}.o".format(ll_name, funcname))
-    debug("[+] Deobfuscated function compiled: {}.o".format(funcname))
-
-    debug("[+] Inject deobfuscated function into binary...")
-    os.system("objcopy --add-section .dcode={}.o --set-section-flags .dcode=code {} {}.deobfuscated".format(funcname, filename, filename))
-    debug("[+] Deobfuscated function injected")
-    return
-
-
 def generateLLVMExpressions(ctx):
     global PATHS
 
     exprs = PATHS[0]
-
-    debug("[+] Converting Symbolic Expressions to an LLVM module...")
+    
+    print("[+] Converting Symbolic Expressions to LLVM-IR... Done.")
     e = tritonexprs2arybo(exprs)
     arybo_vars = []
     sym_vars = ctx.getSymbolicVariables()
+
     for var_id in sym_vars:
         arybo_vars.append(tritonast2arybo(ctx.getAstContext().variable(sym_vars[var_id])).v)
     M = to_llvm_function(e, arybo_vars)
@@ -277,9 +256,9 @@ def run(ctx, binary):
     ctx.setConcreteRegisterValue(ctx.registers.rbp, BASE_STACK)
     ctx.setConcreteRegisterValue(ctx.registers.rsp, BASE_STACK)
 
-    debug("[+] Starting emulation.")
+    print("[+] Symbolic execution Start.")
     emulate(ctx, binary.entrypoint)
-    debug("[+] Emulation done.")
+    print("[+] Symbolic execution Done.")
     return
 
 
@@ -329,6 +308,8 @@ def main():
 
     else:
         print("[-] There is Multiple conditions.")
+
+    print("[*] Successfully deobfuscated target binary: './virtualife.devirtualized'")
 
 
 if __name__ == "__main__":
