@@ -19,15 +19,9 @@ BASE_PLT   = 0x7f0000000000
 BASE_ARGV  = 0x20000000
 BASE_STACK = 0x9fffffff
 
-TOTAL_INST = 0
-TOTAL_UNIQUE_INST = {}
-TOTAL_FUNCTIONS = 0
-
 # Multiple_paths
 CONDITION = list()
 PATHS = list()
-
-VM_INPUT = []
 
 def generateLLVMExpressions(ctx):
     global PATHS
@@ -142,15 +136,6 @@ def __scanf(ctx):
     else:
         debug("[-] scanf: unsupported format string: {}".format(fmt))
         exit()
-
-    #ctx.setConcreteMemoryValue(MemoryAccess(buf, CPUSIZE.DWORD), 4)
-    """
-    for i in range(n):
-        VM_INPUT.append(ord('x'))
-        mem = MemoryAccess(buf + i, CPUSIZE.BYTE)
-        ctx.setConcreteMemoryValue(mem, VM_INPUT[-1])
-        var1 = ctx.convertMemoryToSymbolicVariable(mem)
-    """
     
     return 1
 
@@ -190,7 +175,6 @@ def load_binary(ctx, binary):
 def hooking_handler(ctx):
     global CONDITION
     global PATHS
-    global TOTAL_FUNCTIONS  # used for metric
 
     pc = ctx.getConcreteRegisterValue(ctx.registers.rip)
     for h_info in HOOKING_TABLE:
@@ -200,8 +184,6 @@ def hooking_handler(ctx):
                 ctx.concretizeRegister(ctx.registers.rax)
                 ctx.setConcreteRegisterValue(ctx.registers.rax, ret_value)
 
-            TOTAL_FUNCTIONS += 1
-            
             # Get the return address
             ret_addr = ctx.getConcreteMemoryValue(MemoryAccess(ctx.getConcreteRegisterValue(ctx.registers.rsp), CPUSIZE.QWORD))
 
@@ -263,7 +245,6 @@ def run(ctx, binary):
 
 
 def main():
-    global VM_INPUT
     global CONDITION
     global PATHS
     
@@ -305,11 +286,10 @@ def main():
         recompiler.compile_ll()
         recompiler.extract_bytecodes()
         recompiler.inject_bytecodes(CALL_VFUNC)
+        print("[*] Successfully deobfuscated target binary: './virtualife.devirtualized'")
 
     else:
         print("[-] There is Multiple conditions.")
-
-    print("[*] Successfully deobfuscated target binary: './virtualife.devirtualized'")
 
 
 if __name__ == "__main__":
